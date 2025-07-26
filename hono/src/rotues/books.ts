@@ -14,7 +14,6 @@ import { faker } from "@faker-js/faker";
 const book = new Hono<Env>();
 
 book.use("*", injectDb);
-
 book.get(
   "/",
   validator("query", (value, c) => {
@@ -29,42 +28,26 @@ book.get(
     const q = c.req.valid("query");
     const db = c.get("db");
 
-    const conditions: string[] = [];
+    const where: string[] = [];
     const values: any[] = [];
-    let idx = 1;
+    let i = 1;
 
-    if (q.title) {
-      conditions.push(`title ILIKE $${idx++}`);
-      values.push(`%${q.title}%`);
-    }
-    if (q.author) {
-      conditions.push(`author ILIKE $${idx++}`);
-      values.push(`%${q.author}%`);
-    }
-    if (q.minYear) {
-      conditions.push(`published_year >= $${idx++}`);
-      values.push(Number(q.minYear));
-    }
-    if (q.maxYear) {
-      conditions.push(`published_year <= $${idx++}`);
-      values.push(Number(q.maxYear));
-    }
-    if (q.minSales) {
-      conditions.push(`total_sales >= $${idx++}`);
-      values.push(Number(q.minSales));
-    }
-    if (q.maxSales) {
-      conditions.push(`total_sales <= $${idx++}`);
-      values.push(Number(q.maxSales));
-    }
+    const add = (condition: string, value: any) => {
+      where.push(condition.replace("?", `$${i++}`));
+      values.push(value);
+    };
 
-    const query = `SELECT count(*) FROM books ${
-      conditions.length ? "WHERE " + conditions.join(" AND ") : ""
-    }`;
-    const result = await db.query(query, values);
-    const count = result.rows[0]?.count ?? 0;
+    if (q.title) add("title ILIKE ?", `%${q.title}%`);
+    if (q.author) add("author ILIKE ?", `%${q.author}%`);
+    if (q.minYear) add("published_year >= ?", Number(q.minYear));
+    if (q.maxYear) add("published_year <= ?", Number(q.maxYear));
+    if (q.minSales) add("total_sales >= ?", Number(q.minSales));
+    if (q.maxSales) add("total_sales <= ?", Number(q.maxSales));
 
-    return c.json({ message: "Total Books Found", count: Number(count) });
+    const sql = `SELECT id, title FROM books ${where.length ? "WHERE " + where.join(" AND ") : ""} LIMIT 12`;
+    const result = await db.query(sql, values);
+
+    return c.json({ message: "Books Found", books: result.rows });
   }
 );
 
@@ -84,6 +67,7 @@ book.get(
       return c.json({ message: "Book not found" }, 404);
     }
 
+    // console.log("Book found:", result.rows[0]);
     return c.json({ message: "Get Book by ID", book: result.rows[0] });
   }
 );
