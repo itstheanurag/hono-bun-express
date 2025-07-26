@@ -78,8 +78,8 @@ book.get(
   async (c) => {
     const { id } = c.req.valid("param");
     const db = c.get("db");
-
-    const result = await db.query("SELECT * FROM books WHERE id = $1", [id]);
+    // console.log("Fetching book with ID:", id);
+    const result = await db.query("SELECT id, title FROM books WHERE id = $1", [id]);
     if (result.rowCount === 0) {
       return c.json({ message: "Book not found" }, 404);
     }
@@ -92,15 +92,15 @@ book.post(
   "/",
   validator("json", (value, c) => {
     const result = bookCreateSchema.safeParse(value);
-    if (!result.success) return c.json(errorFormatter(result.error), 400);
+    if (!result.success) {
+      // If validation fails, return a 400 response with error details
+      // console.error("Validation error:", result.error);
+      return c.json(errorFormatter(result.error), 400);}
     return result.data;
   }),
   async (c) => {
     const data = c.req.valid("json");
     const db = c.get("db");
-
-    console.log(data);
-    console.log(db);
     const result = await db.query(
       `INSERT INTO books (title, author, published_year, total_sales)
        VALUES ($1, $2, $3, $4) RETURNING *`,
