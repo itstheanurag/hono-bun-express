@@ -1,10 +1,14 @@
 {
   "name": "learning-hono",
   "scripts": {
-    "dev": "bun run --hot src/index.ts"
+    "dev": "bun run --hot src/index.ts",
+    "init:db": "bun run scripts/books.model.ts"
   },
   "dependencies": {
+    "@faker-js/faker": "^9.9.0",
+    "@types/pg": "^8.15.4",
     "hono": "^4.8.9",
+    "pg": "^8.16.3",
     "zod": "^4.0.10"
   },
   "devDependencies": {
